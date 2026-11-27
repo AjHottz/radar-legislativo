@@ -6,16 +6,18 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 ## [Unreleased]
 
 ### Added
+- Onda 1: Criados `src/explore.py`, `notebooks/01_exploracao_api.ipynb`, `data/cache/api_exploracao_resumo.json` e DDL Star Schema congelado em `sql/01_schema_star.sql` com suporte `pgvector`, RLS e `log_execucoes_pipeline`.
+- Onda 2: Criados `src/config.py` e `src/extract.py` com paginação `while`, backoff exponencial para HTTP 429/5xx, checkpoint retomável em despesas e coleta piloto de 7 dias validada (`21` partidos, `513` deputados, `1.716` proposições, `284` votações, `12.210` despesas).
+- Onda 3 (parcial): Criados `src/transform.py`, `src/load.py` e `src/main.py`; transformação Pandas validada no piloto de 7 dias com quarentena explícita de `11.685` registros negativos em `valorLiquido`.
+- Onda 4 (código pronto): Criado `src/ai_enrichment.py` com taxonomia de 10 temas, cache local de embeddings (`text-embedding-3-small`), similaridade de cosseno e resumo executivo (`gpt-4o-mini`), aguardando preenchimento de `OPENAI_API_KEY`.
+- Onda 5 (artefatos prontos): Criados `n8n/radar_legislativo_workflow.json`, `n8n/README.md` e `src/webhook_runner.py`.
+- Onda 6 (parcial): Criados `README.md`, `docs/arquitetura.md` (diagramas Mermaid) e roteiro de 6 slides em `docs/pitch_bussola_publica.md`.
 - Onda 0 (parcial): Criada estrutura base de pastas (`src/`, `notebooks/`, `sql/`, `n8n/`, `docs/prints/`, `data/raw/`, `data/cache/`), `.gitignore`, `.env.example`, `.env` local (não rastreado), `requirements.txt`, `src/check_env.py`, ambiente virtual `.venv` (Python 3.14.7) validado e `git init -b main`.
 
 ### Planned
-- Onda 0 (conclusão): Configurar `DATABASE_URL` (Supabase) e `OPENAI_API_KEY` no `.env`, validar `src/check_env.py` e realizar commit inicial.
-- Onda 1: Notebook de exploração da API Dados Abertos da Câmara dos Deputados e congelamento do `sql/01_schema_star.sql`.
-- Onda 2: Extrator resiliente em Python com persistência local de JSON bruto.
-- Onda 3: Transformação Pandas, validações de qualidade e carga Star Schema (7 dias -> 30 dias).
-- Onda 4: Camada de IA (piloto 10 itens, embeddings `text-embedding-3-small` + similaridade de cosseno + resumo executivo).
-- Onda 5: Automação no n8n (ingestão às 06h00 + alertas Telegram/E-mail) e exportação `.json`.
-- Onda 6: `README.md` final, diagrama, prints e pitch executivo (até 6 slides).
+- Onda 0/3 (conclusão): Provisionar Supabase, configurar `DATABASE_URL` no `.env`, aplicar `sql/01_schema_star.sql` e executar carga de 7 dias -> 30 dias no Supabase.
+- Onda 4 (execução): Preencher `OPENAI_API_KEY` no `.env`, rodar piloto obrigatório de 10 itens (`--limit 10`) e processar lote completo.
+- Onda 5/6 (evidências): Importar e testar workflow no n8n (Docker/Cloud), capturar prints em `docs/prints/`, gerar `docs/pitch_bussola_publica.pdf` e submeter na Xperiun até 15/12/2026.
 
 ## [0.1.0] - 2026-11-26
 
