@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-import math
 import sys
 from pathlib import Path
 from typing import Any
@@ -35,12 +34,10 @@ def clean_records(df: pd.DataFrame) -> list[dict[str, Any]]:
     for row in records:
         clean_row: dict[str, Any] = {}
         for key, value in row.items():
-            if value is None or value is pd.NA:
-                clean_row[key] = None
-            elif isinstance(value, float) and math.isnan(value):
+            if value is None or (not isinstance(value, (list, dict)) and pd.isna(value)):
                 clean_row[key] = None
             elif isinstance(value, pd.Timestamp):
-                clean_row[key] = None if pd.isna(value) else value.to_pydatetime()
+                clean_row[key] = value.to_pydatetime()
             else:
                 clean_row[key] = value
         cleaned.append(clean_row)
@@ -48,12 +45,20 @@ def clean_records(df: pd.DataFrame) -> list[dict[str, Any]]:
 
 
 def ensure_schema(engine: Engine, sql_file: Path) -> None:
-    """Executa o DDL idempotente sql/01_schema_star.sql caso as tabelas nao existam."""
+    """Executa o DDL idempotente sql/01_schema_star.sql via cursor DBAPI sem interpolacao."""
     if not sql_file.exists():
         raise FileNotFoundError(f"Arquivo DDL nao encontrado: {sql_file}")
     ddl_sql = sql_file.read_text(encoding="utf-8")
-    with engine.begin() as conn:
-        conn.exec_driver_sql(ddl_sql)
+    raw_conn = engine.raw_connection()
+    try:
+        with raw_conn.cursor() as cursor:
+            cursor.execute(ddl_sql)
+        raw_conn.commit()
+    except Exception:
+        raw_conn.rollback()
+        raise
+    finally:
+        raw_conn.close()
     logger.info("DDL verificado/aplicado a partir de %s", sql_file.name)
 
 

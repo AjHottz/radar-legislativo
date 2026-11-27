@@ -10,10 +10,10 @@
 
 | Onda | Etapa do Desafio | Foco Principal | Janela Sugerida | Status |
 |---|---|---|---|---|
-| **Onda 0** | Setup & Governança | Ambiente `.venv`, Git, `.gitignore`, `.env.example`, Supabase | 26/11 a 27/11 | Em andamento (aguarda Supabase DB URL) |
+| **Onda 0** | Setup & Governança | Ambiente `.venv`, Git, `.gitignore`, `.env.example`, Supabase | 26/11 a 27/11 | Concluída (apenas `OPENAI_API_KEY` pendente para Onda 4) |
 | **Onda 1** | Etapa 1: Exploração | Inspeção Swagger e respostas reais da API da Câmara | 28/11 a 29/11 | Concluída |
 | **Onda 2** | Etapa 2: Extração | Script resiliente + paginação + JSON bruto local (`data/raw/`) | 30/11 a 02/12 | Concluída (piloto 7d validado) |
-| **Onda 3** | Etapa 3: Transformação & Carga | Limpeza Pandas, Star Schema SQL, carga 7 dias -> 30 dias no Supabase | 03/12 a 06/12 | Parcial (Transform OK; carga aguarda Supabase) |
+| **Onda 3** | Etapa 3: Transformação & Carga | Limpeza Pandas, Star Schema SQL, carga 7 dias -> 30 dias no Supabase | 03/12 a 06/12 | Em andamento (piloto 7d + idempotência OK; aguarda carga 30d) |
 | **Onda 4** | Etapa 4: Camada de IA | Piloto 10 itens, embeddings `text-embedding-3-small`, cosseno e resumo | 07/12 a 09/12 | Código pronto (aguarda `OPENAI_API_KEY`) |
 | **Onda 5** | Etapa 5: Automação n8n | Workflows cron 06h00, alerta Telegram e digest semanal + `.json` | 10/12 a 12/12 | Parcial (`.json` e runner prontos; sem Docker/n8n local) |
 | **Onda 6** | Empacotamento & Pitch | `README.md`, diagrama, prints, slides (até 6) e submissão na Xperiun | 13/12 a 15/12 | Em andamento (`README.md`, diagrama e roteiro prontos) |
@@ -26,7 +26,7 @@
 - [x] Criar ambiente virtual Python 3.11+ (`.venv`) dentro de `Data_CHallenge1` e gerar `requirements.txt` inicial.
 - [x] Criar `.gitignore` cobrindo `.env`, `.venv/`, `__pycache__/`, `data/raw/`, logs e checkpoints.
 - [x] Criar `.env.example` e configurar `.env` local (nunca versionado).
-- [x] Provisionar projeto gratuito no **Supabase** (`radar-legislativo` / `pibefrkcgoplmvkpagda`, PostgreSQL 17 + `pgvector` habilitado) e aguardar preenchimento da senha em `DATABASE_URL` no `.env` para testar `src/check_env.py`.
+- [x] Provisionar projeto gratuito no **Supabase** (`radar-legislativo` / `pibefrkcgoplmvkpagda`, PostgreSQL 17.12 + `pgvector` habilitado) e validar conexão via `SQLAlchemy`/`psycopg2` (`src/check_env.py` aprovado).
 - [x] Fazer commit inicial da estrutura documental e de configuração (`5a6f45b`, repositório Git inicializado com `git init -b main` e conectado a `AjHottz/radar-legislativo`).
 - **Definition of Done (DoD):** `python -c "import requests, pandas, sqlalchemy, openai"` funciona na `.venv` e conexão com Supabase responde sem expor credenciais no Git.
 
@@ -59,7 +59,8 @@
   - Validações explícitas: campos obrigatórios não nulos, datas em faixa válida, `valor_documento >= 0` e `valor_liquido >= 0` (com quarentena explícita de negativos), deduplicação por chave única.
   - Registro de métricas de qualidade (`data/cache/transform_qa_<data>.json`).
 - [x] Implementar `src/load.py` (e `src/main.py`) com carga idempotente (`ON CONFLICT DO UPDATE`) respeitando a ordem referencial (Dimensões -> Fatos).
-- [ ] Executar `python -m src.main --step load --days 30` após preencher `DATABASE_URL` no `.env` (coleta e transformação de 30 dias já prontas em disco: `21` partidos, `513` deputados, `7.430` proposições, `2.000` votações, `1.768` despesas válidas).
+- [x] Validar carga piloto de **7 dias** e idempotência no Supabase (`2026-11-26-piloto7d`, 2 execuções sem duplicatas: `21` partidos, `513` deputados, `1.680` proposições, `284` votações, `525` despesas).
+- [ ] Executar carga oficial de **30 dias** no Supabase (`python -m src.main --step load --days 30 --run-date 2026-11-26`) e validar contagens finais no banco.
 - **DoD:** Todas as 5 tabelas (`dim_partidos`, `dim_deputados`, `fato_proposicoes`, `fato_votacoes`, `fato_despesas`) populadas no Supabase com >= 30 dias de dados reais e zero duplicatas após reexecução.
 
 ### Onda 4: Camada de IA Aplicada com Controle de Custos (Etapa 4)
