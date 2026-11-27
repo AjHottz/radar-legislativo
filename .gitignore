@@ -15,6 +15,7 @@ __pycache__/
 
 # Dados brutos e midia pesada
 data/raw/
+data/cache/quarantine_*.json
 *.m4a
 *.mp4
 *.mp3

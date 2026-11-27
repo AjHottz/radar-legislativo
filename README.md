@@ -72,7 +72,7 @@ DDL completo e idempotente em [sql/01_schema_star.sql](./sql/01_schema_star.sql)
 - **Exploração prévia antes do ETL (`src/explore.py` e `notebooks/01_exploracao_api.ipynb`):**
   - Emendas e substitutivos (`SBT`, `EMC`, `PRL`) retornam `ano = 0` na API; o pipeline preserva esses registros em vez de descartá-los erroneamente.
   - Votações recentes frequentemente referenciam proposições protocoladas em anos anteriores; por isso `fato_votacoes.id_proposicao` é indexada sem `FOREIGN KEY` bloqueante.
-  - Na coleta piloto de 7 dias (`2026-11-19` a `2026-11-26`), foram extraídos **21 partidos**, **513 deputados**, **1.716 proposições** (1.680 válidas após filtro de qualidade), **284 votações** e **12.210 registros de despesas** (com **11.685** registros negativos em `valorLiquido` identificados pela regra de qualidade e separados em quarentena antes da carga).
+  - Na coleta completa de **30 dias** (`2026-10-27` a `2026-11-26`), foram extraídos **21 partidos**, **513 deputados**, **7.514 proposições** (7.430 válidas após filtro de qualidade), **2.000 votações** e **20.155 registros de despesas** (**1.768** válidas e **18.387** registros negativos em `valorLiquido` separados em quarentena antes da carga).
 - **Resiliência HTTP:** O endpoint `/deputados/{id}/despesas` aplica limitação de taxa (`HTTP 429`) sob concorrência; o extrator usa `ThreadPoolExecutor`, backoff exponencial e checkpoint local retomável.
 
 ---

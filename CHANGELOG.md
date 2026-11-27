@@ -12,10 +12,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 - Onda 4 (código pronto): Criado `src/ai_enrichment.py` com taxonomia de 10 temas, cache local de embeddings (`text-embedding-3-small`), similaridade de cosseno e resumo executivo (`gpt-4o-mini`), aguardando preenchimento de `OPENAI_API_KEY`.
 - Onda 5 (artefatos prontos): Criados `n8n/radar_legislativo_workflow.json`, `n8n/README.md` e `src/webhook_runner.py`.
 - Onda 6 (parcial): Criados `README.md`, `docs/arquitetura.md` (diagramas Mermaid) e roteiro de 6 slides em `docs/pitch_bussola_publica.md`.
-- Onda 0 (parcial): Criada estrutura base de pastas (`src/`, `notebooks/`, `sql/`, `n8n/`, `docs/prints/`, `data/raw/`, `data/cache/`), `.gitignore`, `.env.example`, `.env` local (não rastreado), `requirements.txt`, `src/check_env.py`, ambiente virtual `.venv` (Python 3.14.7) validado e `git init -b main`.
+- Onda 0 (concluída exceto senha DB e OpenAI): Projeto Supabase `radar-legislativo` (`pibefrkcgoplmvkpagda`, `sa-east-1`) provisionado com `sql/01_schema_star.sql` aplicado via migração `init_star_schema` e repositório público `AjHottz/radar-legislativo` criado e sincronizado no GitHub.
+- Onda 2 & 3 (30 dias): Extração completa de 30 dias (`2026-10-27` a `2026-11-26`) e validação Pandas executadas com sucesso (`21` partidos, `513` deputados, `7.430` proposições válidas, `2.000` votações, `1.768` despesas válidas e `18.387` despesas negativas separadas em quarentena).
 
 ### Planned
-- Onda 0/3 (conclusão): Provisionar Supabase, configurar `DATABASE_URL` no `.env`, aplicar `sql/01_schema_star.sql` e executar carga de 7 dias -> 30 dias no Supabase.
+- Onda 3 (carga completa): Preencher senha do Postgres em `DATABASE_URL` no `.env` e executar `python -m src.main --step load --days 30` para popular as demais tabelas no Supabase.
 - Onda 4 (execução): Preencher `OPENAI_API_KEY` no `.env`, rodar piloto obrigatório de 10 itens (`--limit 10`) e processar lote completo.
 - Onda 5/6 (evidências): Importar e testar workflow no n8n (Docker/Cloud), capturar prints em `docs/prints/`, gerar `docs/pitch_bussola_publica.pdf` e submeter na Xperiun até 15/12/2026.
 
