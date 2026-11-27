@@ -1,0 +1,252 @@
+{
+  "name": "Radar Legislativo - Bussola Publica (Ingestao + Alertas + Digest)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * *"
+            }
+          ]
+        }
+      },
+      "id": "node-cron-diario",
+      "name": "Cron Diario 06h00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [220, 200]
+    },
+    {
+      "parameters": {
+        "command": "cd /app/Data_CHallenge1 && .venv/Scripts/python.exe -m src.main --step all --days 2 --limit 50"
+      },
+      "id": "node-exec-pipeline",
+      "name": "Executar Pipeline Python (ETL + IA)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [480, 200]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id_proposicao\n  , sigla_tipo\n  , numero\n  , ano\n  , tema_ia\n  , similaridade_tema\n  , resumo_executivo\n  , data_apresentacao\n  , uri\nFROM public.fato_proposicoes\nWHERE tema_ia IN (\n    'Tecnologia, Dados e Inteligência Artificial'\n    , 'Sistema Tributário e Fiscal'\n    , 'Economia, Mercado Financeiro e Regulação'\n  )\n  AND processado_ia_em >= NOW() - INTERVAL '24 hours'\nORDER BY similaridade_tema DESC\nLIMIT 10;"
+      },
+      "id": "node-pg-alertas",
+      "name": "Supabase: Buscar Temas Criticos (24h)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [740, 200],
+      "credentials": {
+        "postgres": {
+          "id": "SUPABASE_POSTGRES_CREDENTIAL",
+          "name": "Supabase Postgres - Radar Legislativo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-tem-proposicao",
+              "leftValue": "={{ $json.id_proposicao }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "node-if-critico",
+      "name": "Ha Proposicao Critica?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1000, 200]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "=🚨 *ALERTA REGULATORIO - BUSSOLA PUBLICA*\n\n*Proposicao:* {{ $json.sigla_tipo }} {{ $json.numero }}/{{ $json.ano }}\n*Tema IA:* {{ $json.tema_ia }} (score {{ $json.similaridade_tema }})\n*Data:* {{ $json.data_apresentacao }}\n\n*Resumo Executivo:*\n{{ $json.resumo_executivo }}\n\n🔗 {{ $json.uri }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "node-telegram-alerta",
+      "name": "Telegram: Alerta Critico Imediato",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1260, 140],
+      "credentials": {
+        "telegramApi": {
+          "id": "TELEGRAM_BOT_CREDENTIAL",
+          "name": "Telegram Bot - Bussola Publica"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * 1"
+            }
+          ]
+        }
+      },
+      "id": "node-cron-semanal",
+      "name": "Cron Digest Semanal (Seg 08h00)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [220, 480]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id_proposicao\n  , sigla_tipo\n  , numero\n  , ano\n  , tema_ia\n  , similaridade_tema\n  , resumo_executivo\n  , data_apresentacao\nFROM public.fato_proposicoes\nWHERE tema_ia IS NOT NULL\n  AND data_apresentacao >= NOW() - INTERVAL '7 days'\nORDER BY similaridade_tema DESC NULLS LAST\nLIMIT 5;"
+      },
+      "id": "node-pg-digest",
+      "name": "Supabase: Top 5 da Semana",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [480, 480],
+      "credentials": {
+        "postgres": {
+          "id": "SUPABASE_POSTGRES_CREDENTIAL",
+          "name": "Supabase Postgres - Radar Legislativo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all().map((item, idx) => {\n  const d = item.json;\n  return `${idx + 1}. *${d.sigla_tipo} ${d.numero}/${d.ano}* (${d.tema_ia})\\n${d.resumo_executivo || 'Sem resumo'}`;\n});\nreturn [{ json: { mensagem: `📊 *DIGEST SEMANAL - RADAR LEGISLATIVO*\\n\\n${items.join('\\n\\n')}` } }];"
+      },
+      "id": "node-code-digest",
+      "name": "Formatar Digest Top 5",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [740, 480]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "={{ $json.mensagem }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "node-telegram-digest",
+      "name": "Telegram: Enviar Digest Semanal",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1000, 480],
+      "credentials": {
+        "telegramApi": {
+          "id": "TELEGRAM_BOT_CREDENTIAL",
+          "name": "Telegram Bot - Bussola Publica"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Cron Diario 06h00": {
+      "main": [
+        [
+          {
+            "node": "Executar Pipeline Python (ETL + IA)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Executar Pipeline Python (ETL + IA)": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Buscar Temas Criticos (24h)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: Buscar Temas Criticos (24h)": {
+      "main": [
+        [
+          {
+            "node": "Ha Proposicao Critica?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ha Proposicao Critica?": {
+      "main": [
+        [
+          {
+            "node": "Telegram: Alerta Critico Imediato",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Cron Digest Semanal (Seg 08h00)": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Top 5 da Semana",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: Top 5 da Semana": {
+      "main": [
+        [
+          {
+            "node": "Formatar Digest Top 5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatar Digest Top 5": {
+      "main": [
+        [
+          {
+            "node": "Telegram: Enviar Digest Semanal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Sao_Paulo"
+  },
+  "tags": [
+    {
+      "name": "radar-legislativo"
+    }
+  ]
+}
