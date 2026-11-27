@@ -1,0 +1,31 @@
+# Ambientes e credenciais
+.env
+.env.*
+!.env.example
+
+# Python e ambientes virtuais
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+
+# Dados brutos e midia pesada
+data/raw/
+*.m4a
+*.mp4
+*.mp3
+
+# Notebooks e ferramentas
+.ipynb_checkpoints/
+.vscode/
+.idea/
+
+# Logs e sistema
+*.log
+.DS_Store
+Thumbs.db
+
