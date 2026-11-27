@@ -19,8 +19,10 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 - Onda 5 (concluída): Instância local `n8n@2.49.7` conectada com `NODE_OPTIONS="--dns-result-order=ipv4first"` (workaround IPv6 Windows), credenciais Supabase Session Pooler e Telegram API configuradas, workflow `Monitorar Radar Legislativo e notificar Telegram` (`Pbtgkim2DNO5Hgc0`) publicado e exportado sanitizado em `n8n/radar_legislativo_workflow.json` (`10` nós, `Aggregate` nativo e 2 grupos visuais). Execuções ao vivo `ID#3` (semanal Top 5 em `1.558s`, `message_id: 4`) e `ID#4` (diário com runner `8085` + Gemini `20/20` + 10 alertas em `3m 51.875s`, `message_id: 5`) validadas e registradas com prints em `docs/prints/`.
 
+- Onda 6 (concluída): Gerado diagrama visual `docs/arquitetura.png`, atualizado `README.md` com métricas finais do Supabase (`21` partidos, `513` deputados, `7.430` proposições, `2.004` votações, `1.768` despesas válidas, `368` classificações IA e `80` resumos a `US$ 0.00`), prints do n8n/Telegram e guia de consultas SQL de leitura; exportado deck executivo de 6 slides em `docs/pitch_bussola_publica.pdf`; auditoria Git aprovada sem vazamento de segredos ou arquivos brutos.
+
 ### Planned
-- Onda 6 (entrega final): Exportar diagrama `docs/arquitetura.png`, revisar `README.md` (com prints e instruções de leitura no Supabase), gerar `docs/pitch_bussola_publica.pdf`, auditar histórico Git e submeter na Xperiun até 15/12/2026.
+- Entrega final: Merge/push para `main` em `AjHottz/radar-legislativo` e submissão na plataforma Xperiun antes de 15/12/2026.
 
 ## [0.1.0] - 2026-11-26
 

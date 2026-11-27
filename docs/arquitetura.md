@@ -8,10 +8,10 @@ flowchart LR
     EXT["Extracao Python\n(src/extract.py)\nPaginacao while + retry/backoff"]
     RAW["Camada Raw Local\n(data/raw/<entidade>/*.json)"]
     TRF["Transformacao & QA\n(src/transform.py)\nPandas + quarentena negativos"]
-    SUPA[("Supabase PostgreSQL\n+ pgvector\nStar Schema (5 tabelas)")]
-    IA["Camada de IA\n(src/ai_enrichment.py)\ntext-embedding-3-small +\ncosseno + gpt-4o-mini"]
-    N8N["Orquestracao n8n\nCron 06h00 + Alerta Critico\n+ Digest Semanal Top 5"]
-    TG["Telegram / E-mail\n(Consultores e Clientes)"]
+    SUPA[("Supabase PostgreSQL\n+ pgvector\nStar Schema (5 tabelas + log)")]
+    IA["Camada de IA\n(src/ai_enrichment.py)\ngemini-embedding-001 (1536d)\n+ cosseno + gemini-3.5-flash-lite"]
+    N8N["Orquestracao n8n\nCron 06h00 + Runner 8085\n+ Alerta Critico + Top 5 Semanal"]
+    TG["Telegram Bot API\n(Consultores e Clientes)"]
 
     API --> EXT --> RAW --> TRF --> SUPA
     SUPA <--> IA
