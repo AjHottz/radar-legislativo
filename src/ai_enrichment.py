@@ -50,12 +50,15 @@ SUMMARY_SYSTEM_PROMPT = (
     "destacando impacto regulatorio, setor afetado e risco ou oportunidade para empresas."
 )
 
-SUBSTANTIVE_TYPES: tuple[str, ...] = (
+PRIMARY_BILL_TYPES: tuple[str, ...] = (
     "PL"
     , "PLP"
     , "PEC"
     , "MPV"
-    , "PDL"
+)
+
+SECONDARY_SUBSTANTIVE_TYPES: tuple[str, ...] = (
+    "PDL"
     , "RIC"
     , "REQ"
 )
@@ -112,24 +115,48 @@ def embed_texts(
     , client: Any
     , model: str
     , texts: list[str]
+    , batch_size: int = 100
 ) -> tuple[list[list[float]], int]:
-    """Gera embeddings de 1536 dimensoes via Gemini ou OpenAI."""
-    if provider == "gemini":
-        resp = client.models.embed_content(
-            model=model
-            , contents=texts
-            , config=genai_types.EmbedContentConfig(
-                output_dimensionality=EMBEDDING_DIMENSIONS
-            )
-        )
-        vectors = [normalize_l2(list(item.values)) for item in resp.embeddings]
-        approx_tokens = sum(max(len(t.split()), 1) for t in texts)
-        return vectors, approx_tokens
+    """Gera embeddings de 1536 dimensoes em lotes seguros com retentativa."""
+    all_vectors: list[list[float]] = []
+    total_tokens = 0
 
-    resp = client.embeddings.create(model=model, input=texts)
-    vectors = [list(item.embedding) for item in resp.data]
-    tokens = getattr(resp.usage, "prompt_tokens", 0) or 0
-    return vectors, tokens
+    for idx in range(0, len(texts), batch_size):
+        chunk = texts[idx:idx + batch_size]
+        if provider == "gemini":
+            for attempt in range(1, 5):
+                try:
+                    resp = client.models.embed_content(
+                        model=model
+                        , contents=chunk
+                        , config=genai_types.EmbedContentConfig(
+                            output_dimensionality=EMBEDDING_DIMENSIONS
+                        )
+                    )
+                    all_vectors.extend(normalize_l2(list(item.values)) for item in resp.embeddings)
+                    total_tokens += sum(max(len(t.split()), 1) for t in chunk)
+                    break
+                except genai_errors.APIError as exc:
+                    status_code = getattr(exc, "code", None)
+                    if status_code in (429, 500, 502, 503, 504) and attempt < 4:
+                        wait_s = 15 * attempt
+                        logger.warning(
+                            "Retry embeddings Gemini HTTP %s (tentativa %s/4). Aguardando %ss..."
+                            , status_code
+                            , attempt
+                            , wait_s
+                        )
+                        time.sleep(wait_s)
+                        continue
+                    raise
+            if idx + batch_size < len(texts):
+                time.sleep(0.5)
+        else:
+            resp = client.embeddings.create(model=model, input=chunk)
+            all_vectors.extend(list(item.embedding) for item in resp.data)
+            total_tokens += getattr(resp.usage, "prompt_tokens", 0) or 0
+
+    return all_vectors, total_tokens
 
 
 def get_or_build_theme_embeddings(
@@ -292,14 +319,19 @@ def run_ai_enrichment(
         )
         theme_vectors = [(t["tema"], np.array(t["embedding"], dtype=float)) for t in temas]
 
-        substantive_sql = ", ".join(f"'{t}'" for t in SUBSTANTIVE_TYPES)
+        primary_sql = ", ".join(f"'{t}'" for t in PRIMARY_BILL_TYPES)
+        secondary_sql = ", ".join(f"'{t}'" for t in SECONDARY_SUBSTANTIVE_TYPES)
         with engine.connect() as conn:
             rows = conn.execute(
                 text(
                     "SELECT id_proposicao, sigla_tipo, numero, ano, ementa "
                     "FROM fato_proposicoes "
                     "WHERE tema_ia IS NULL "
-                    f"ORDER BY CASE WHEN sigla_tipo IN ({substantive_sql}) THEN 0 ELSE 1 END "
+                    "ORDER BY CASE "
+                    f"  WHEN sigla_tipo IN ({primary_sql}) THEN 0 "
+                    f"  WHEN sigla_tipo IN ({secondary_sql}) THEN 1 "
+                    "  ELSE 2 "
+                    "END "
                     "  , data_apresentacao DESC NULLS LAST, id_proposicao DESC "
                     "LIMIT :limit;"
                 )
@@ -315,19 +347,35 @@ def run_ai_enrichment(
                 , "custo_estimado_usd": round(cache_cost, 6)
             }
 
-        ementas = [row["ementa"] for row in rows]
-        prop_vectors, emb_tokens = embed_texts(
-            provider=provider
-            , client=client
-            , model=embedding_model
-            , texts=ementas
-        )
-        total_tokens = cache_tokens + emb_tokens
-        total_cost = cache_cost + estimate_cost_usd(embedding_model, emb_tokens)
-
+        total_tokens = cache_tokens
+        total_cost = cache_cost
         resultados: list[dict[str, Any]] = []
-        with engine.begin() as conn:
-            for row, vec in zip(rows, prop_vectors):
+        update_sql = text(
+            "UPDATE fato_proposicoes "
+            "SET tema_ia = :tema_ia "
+            "  , similaridade_tema = :similaridade "
+            "  , resumo_executivo = :resumo "
+            "  , embedding = CAST(:embedding AS vector) "
+            "  , processado_ia_em = NOW() "
+            "  , atualizado_em = NOW() "
+            "WHERE id_proposicao = :id_proposicao;"
+        )
+
+        commit_chunk_size = 200 if skip_summary else 50
+        for start_idx in range(0, len(rows), commit_chunk_size):
+            batch_rows = rows[start_idx:start_idx + commit_chunk_size]
+            ementas = [row["ementa"] for row in batch_rows]
+            prop_vectors, emb_tokens = embed_texts(
+                provider=provider
+                , client=client
+                , model=embedding_model
+                , texts=ementas
+            )
+            total_tokens += emb_tokens
+            total_cost += estimate_cost_usd(embedding_model, emb_tokens)
+
+            update_params: list[dict[str, Any]] = []
+            for row, vec in zip(batch_rows, prop_vectors):
                 prop_vec = np.array(vec, dtype=float)
                 best_theme = ""
                 best_score = -1.0
@@ -355,18 +403,8 @@ def run_ai_enrichment(
                         time.sleep(0.5)
 
                 vector_literal = "[" + ",".join(f"{v:.8f}" for v in vec) + "]"
-                conn.execute(
-                    text(
-                        "UPDATE fato_proposicoes "
-                        "SET tema_ia = :tema_ia "
-                        "  , similaridade_tema = :similaridade "
-                        "  , resumo_executivo = :resumo "
-                        "  , embedding = CAST(:embedding AS vector) "
-                        "  , processado_ia_em = NOW() "
-                        "  , atualizado_em = NOW() "
-                        "WHERE id_proposicao = :id_proposicao;"
-                    )
-                    , {
+                update_params.append(
+                    {
                         "tema_ia": best_theme
                         , "similaridade": round(best_score, 4)
                         , "resumo": resumo
@@ -382,6 +420,15 @@ def run_ai_enrichment(
                         , "resumo_executivo": resumo
                     }
                 )
+
+            with engine.begin() as conn:
+                conn.execute(update_sql, update_params)
+            logger.info(
+                "Progresso IA (%s): %s/%s proposicoes gravadas no Supabase."
+                , provider
+                , len(resultados)
+                , len(rows)
+            )
 
         summary_report = {
             "provider": provider
