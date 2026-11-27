@@ -1,0 +1,155 @@
+{
+  "data_exploracao": "2026-11-26",
+  "janela_teste": {
+    "inicio": "2026-11-19",
+    "fim": "2026-11-26"
+  },
+  "endpoints": {
+    "partidos": {
+      "count_page_1": 21,
+      "keys": [
+        "id",
+        "sigla",
+        "nome",
+        "uri"
+      ],
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://dadosabertos.camara.leg.br/api/v2/partidos?itens=100&pagina=1"
+        },
+        {
+          "rel": "first",
+          "href": "https://dadosabertos.camara.leg.br/api/v2/partidos?pagina=1&itens=100"
+        },
+        {
+          "rel": "last",
+          "href": "https://dadosabertos.camara.leg.br/api/v2/partidos?pagina=1&itens=100"
+        }
+      ]
+    },
+    "deputados": {
+      "count_page_1": 100,
+      "keys": [
+        "id",
+        "uri",
+        "nome",
+        "siglaPartido",
+        "uriPartido",
+        "siglaUf",
+        "idLegislatura",
+        "urlFoto",
+        "email"
+      ],
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://dadosabertos.camara.leg.br/api/v2/deputados?itens=100&pagina=1"
+        },
+        {
+          "rel": "next",
+          "href": "https://dadosabertos.camara.leg.br/api/v2/deputados?pagina=2&itens=100"
+        },
+        {
+          "rel": "first",
+          "href": "https://dadosabertos.camara.leg.br/api/v2/deputados?pagina=1&itens=100"
+        },
+        {
+          "rel": "last",
+          "href": "https://dadosabertos.camara.leg.br/api/v2/deputados?pagina=6&itens=100"
+        }
+      ]
+    },
+    "proposicoes": {
+      "count_page_1": 100,
+      "keys": [
+        "id",
+        "uri",
+        "siglaTipo",
+        "codTipo",
+        "numero",
+        "ano",
+        "ementa",
+        "dataApresentacao"
+      ],
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://dadosabertos.camara.leg.br/api/v2/proposicoes?dataApresentacaoInicio=2026-11-19&dataApresentacaoFim=2026-11-26&itens=100&pagina=1"
+        },
+        {
+          "rel": "next",
+          "href": "https://dadosabertos.camara.leg.br/api/v2/proposicoes?dataApresentacaoInicio=2026-11-19&dataApresentacaoFim=2026-11-26&pagina=2&itens=100"
+        },
+        {
+          "rel": "first",
+          "href": "https://dadosabertos.camara.leg.br/api/v2/proposicoes?dataApresentacaoInicio=2026-11-19&dataApresentacaoFim=2026-11-26&pagina=1&itens=100"
+        },
+        {
+          "rel": "last",
+          "href": "https://dadosabertos.camara.leg.br/api/v2/proposicoes?dataApresentacaoInicio=2026-11-19&dataApresentacaoFim=2026-11-26&pagina=18&itens=100"
+        }
+      ]
+    },
+    "votacoes": {
+      "count_page_1": 100,
+      "keys": [
+        "id",
+        "uri",
+        "data",
+        "dataHoraRegistro",
+        "siglaOrgao",
+        "uriOrgao",
+        "uriEvento",
+        "proposicaoObjeto",
+        "uriProposicaoObjeto",
+        "descricao",
+        "aprovacao"
+      ],
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://dadosabertos.camara.leg.br/api/v2/votacoes?dataInicio=2026-11-19&dataFim=2026-11-26&itens=100&pagina=1"
+        },
+        {
+          "rel": "next",
+          "href": "https://dadosabertos.camara.leg.br/api/v2/votacoes?dataInicio=2026-11-19&dataFim=2026-11-26&pagina=2&itens=100"
+        },
+        {
+          "rel": "first",
+          "href": "https://dadosabertos.camara.leg.br/api/v2/votacoes?dataInicio=2026-11-19&dataFim=2026-11-26&pagina=1&itens=100"
+        },
+        {
+          "rel": "last",
+          "href": "https://dadosabertos.camara.leg.br/api/v2/votacoes?dataInicio=2026-11-19&dataFim=2026-11-26&pagina=3&itens=100"
+        }
+      ]
+    },
+    "despesas": {
+      "deputado_teste": 204379,
+      "ano": 2026,
+      "mes": 10,
+      "count_page_1": 16,
+      "negativos_na_amostra": 12,
+      "keys": [
+        "ano",
+        "mes",
+        "tipoDespesa",
+        "codDocumento",
+        "tipoDocumento",
+        "codTipoDocumento",
+        "dataDocumento",
+        "numDocumento",
+        "valorDocumento",
+        "urlDocumento",
+        "nomeFornecedor",
+        "cnpjCpfFornecedor",
+        "valorLiquido",
+        "valorGlosa",
+        "numRessarcimento",
+        "codLote",
+        "parcela"
+      ]
+    }
+  }
+}
