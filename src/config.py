@@ -65,6 +65,20 @@ def is_placeholder(value: str | None) -> bool:
     return any(marker in value for marker in markers)
 
 
+def normalize_database_url(url: str | None) -> str:
+    """Padroniza prefixos Postgres/psycopg v3 para o driver psycopg2 instalado."""
+    if not url:
+        return ""
+    cleaned = url.strip()
+    if cleaned.startswith("postgresql+psycopg://"):
+        return "postgresql+psycopg2://" + cleaned[len("postgresql+psycopg://"):]
+    if cleaned.startswith("postgres://"):
+        return "postgresql+psycopg2://" + cleaned[len("postgres://"):]
+    if cleaned.startswith("postgresql://"):
+        return "postgresql+psycopg2://" + cleaned[len("postgresql://"):]
+    return cleaned
+
+
 @dataclass(frozen=True)
 class Settings:
     """Parametros consolidados do pipeline carregados a partir do .env."""
@@ -114,7 +128,7 @@ def load_settings() -> Settings:
             "CAMARA_API_BASE_URL"
             , "https://dadosabertos.camara.leg.br/api/v2"
         ).rstrip("/")
-        , database_url=os.getenv("DATABASE_URL", "")
+        , database_url=normalize_database_url(os.getenv("DATABASE_URL", ""))
         , openai_api_key=os.getenv("OPENAI_API_KEY", "")
         , openai_embedding_model=os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
         , openai_summary_model=os.getenv("OPENAI_SUMMARY_MODEL", "gpt-4o-mini")

@@ -10,6 +10,12 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from src.config import is_placeholder, normalize_database_url
+
 
 REQUIRED_MODULES: list[str] = [
     "requests"
@@ -39,25 +45,14 @@ def check_imports() -> bool:
     return True
 
 
-def is_placeholder(value: str | None) -> bool:
-    """Identifica se uma variável ainda está ausente ou com texto de exemplo."""
-    if not value:
-        return True
-    markers: tuple[str, ...] = (
-        "SUA_SENHA"
-        , "SEU_PROJETO"
-        , "SUA_CHAVE_AQUI"
-    )
-    return any(marker in value for marker in markers)
-
-
 def check_database(database_url: str | None) -> bool:
     """Testa conectividade com PostgreSQL e verifica disponibilidade da extensão vector."""
     if is_placeholder(database_url):
         print("[PENDENTE] DATABASE_URL não configurada no arquivo .env.")
         return False
 
-    engine = create_engine(database_url, pool_pre_ping=True)
+    normalized_url = normalize_database_url(database_url)
+    engine = create_engine(normalized_url, pool_pre_ping=True)
     try:
         with engine.connect() as conn:
             version = conn.execute(text("SELECT version();")).scalar_one()
