@@ -258,9 +258,10 @@ def run_extraction(
         dep_ids = dep_ids[:max_deputados]
 
     month_pairs = month_pairs_for_window(start_date, today)
+    months_tag = "_".join(f"{ano}{mes:02d}" for ano, mes in month_pairs)
     despesas_dir = settings.raw_dir / "despesas"
     despesas_dir.mkdir(parents=True, exist_ok=True)
-    checkpoint_file = despesas_dir / f"{exec_date}_checkpoint.json"
+    checkpoint_file = despesas_dir / f"{exec_date}_{months_tag}_checkpoint.json"
 
     completed_by_dep: dict[str, list[dict[str, Any]]] = {}
     if checkpoint_file.exists():
