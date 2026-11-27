@@ -14,10 +14,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 - Onda 6 (parcial): Criados `README.md`, `docs/arquitetura.md` (diagramas Mermaid) e roteiro de 6 slides em `docs/pitch_bussola_publica.md`.
 - Onda 0 (concluída): Projeto Supabase `radar-legislativo` (`pibefrkcgoplmvkpagda`, `sa-east-1`) provisionado, `sql/01_schema_star.sql` aplicado via migração `init_star_schema`, conexão `src/check_env.py` validada (`PostgreSQL 17.12`, `pgvector` ativo) e repositório público `AjHottz/radar-legislativo` sincronizado no GitHub.
 - Onda 3 (piloto 7d validado): Corrigidos `ensure_schema()` (cursor DBAPI) e `clean_records()` (`pd.isna(value)` para `NaT`) em `src/load.py`; carga piloto de 7 dias (`2026-11-26-piloto7d`) executada 2 vezes no Supabase comprovando idempotência (`21` partidos, `513` deputados, `1.680` proposições, `284` votações, `525` despesas e `2` registros em `log_execucoes_pipeline`).
-- Onda 2 & 3 (30 dias raw/transform): Extração completa de 30 dias (`2026-10-27` a `2026-11-26`) e validação Pandas executadas em disco (`21` partidos, `513` deputados, `7.430` proposições válidas, `2.000` votações, `1.768` despesas válidas e `18.387` despesas negativas separadas em quarentena).
+- Onda 3 (concluída): Carga oficial de 30 dias (`2026-10-27` a `2026-11-26`) executada e validada diretamente no Supabase (`21` partidos, `513` deputados, `7.430` proposições, `2.000` votações, `1.768` despesas válidas, `18.387` despesas negativas separadas em quarentena e `3` registros em `log_execucoes_pipeline`).
 
 ### Planned
-- Onda 3 (carga completa 30d): Executar `python -m src.main --step load --days 30 --run-date 2026-11-26` após autorização e validar contagens finais no Supabase.
 - Onda 4 (execução): Preencher `OPENAI_API_KEY` no `.env`, rodar piloto obrigatório de 10 itens (`--limit 10`) e processar lote completo.
 - Onda 5/6 (evidências): Importar e testar workflow no n8n (Docker/Cloud), capturar prints em `docs/prints/`, gerar `docs/pitch_bussola_publica.pdf` e submeter na Xperiun até 15/12/2026.
 
