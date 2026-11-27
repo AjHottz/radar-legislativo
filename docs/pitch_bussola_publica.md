@@ -44,7 +44,7 @@
   - **Fluxo Diário (06h00 BRT):** Aciona `POST http://127.0.0.1:8085/run-pipeline` -> Supabase (`Consultar proposicoes criticas 24h`) -> `Aggregate` -> alerta HTML no Telegram. Validado ao vivo na execução `ID#4` (`3m 51.875s`, `20/20` novos resumos IA e `10` alertas críticos entregues no `message_id: 5`).
   - **Digest Semanal (Segundas 08h00 BRT):** Seleciona Top 5 da semana no Supabase e entrega boletim HTML. Validado ao vivo na execução `ID#3` (`1.558s`, `5` proposições entregues no `message_id: 4`).
 - **Evidências Visuais em `docs/prints/`:**
-  - `docs/prints/n8n_canvas.png`, `docs/prints/n8n_execucao_diaria.png`, `docs/prints/n8n_execucao_semanal.png` e `docs/prints/telegram_alertas.jpg`.
+  - `docs/prints/supabase_tabelas.png`, `docs/prints/n8n_canvas.png`, `docs/prints/n8n_execucao_diaria.png`, `docs/prints/n8n_execucao_semanal.png` e `docs/prints/telegram_alertas.jpg`.
 
 ---
 

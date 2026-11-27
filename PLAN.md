@@ -81,9 +81,9 @@
 
 ### Onda 6: Documentação de Portfólio, Pitch e Entrega Final
 - [x] Criar diagrama de arquitetura do pipeline em Mermaid (`docs/arquitetura.md`) e exportar PNG executivo em `docs/arquitetura.png`.
-- [x] Redigir `README.md` de alto impacto contendo contexto, arquitetura, modelo de dados, decisões técnicas, camada IA Gemini, evidências reais (prints), guia de leitura no Supabase e instruções de execução.
-- [x] Produzir roteiro da apresentação executiva (6 slides) em `docs/pitch_bussola_publica.md` e exportar deck final em `docs/pitch_bussola_publica.pdf`.
-- [x] Realizar revisão final do repositório (conferido que `.env`, `data/raw/` e `DataCast.m4a` nunca entraram no histórico Git e nenhum segredo real está nos arquivos versionados), pendente apenas merge/push final para `main`.
+- [x] Redigir `README.md` de alto impacto contendo contexto, arquitetura, modelo de dados (colunas e relacionamentos), decisões técnicas e porquês, prompts exatos de IA, links REST em modo somente leitura no Supabase e prints reais.
+- [x] Produzir roteiro da apresentação executiva (6 slides) em `docs/pitch_bussola_publica.md` e exportar deck final em `docs/pitch_bussola_publica.pdf` (com prints do Supabase, n8n e Telegram).
+- [x] Realizar revisão final do repositório (conferido que `.env`, `data/raw/` e `DataCast.m4a` nunca entraram no histórico Git e nenhum segredo real está nos arquivos versionados), merge para `main` e push para o GitHub.
 - [ ] Submeter entrega na plataforma Xperiun antes de **15/12/2026**.
 - **DoD:** Todos os 5 entregáveis validados contra as 5 dimensões de avaliação da Xperiun.
 
