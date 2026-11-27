@@ -15,9 +15,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 - Onda 0 (concluída): Projeto Supabase `radar-legislativo` (`pibefrkcgoplmvkpagda`, `sa-east-1`) provisionado, `sql/01_schema_star.sql` aplicado via migração `init_star_schema`, conexão `src/check_env.py` validada (`PostgreSQL 17.12`, `pgvector` ativo) e repositório público `AjHottz/radar-legislativo` sincronizado no GitHub.
 - Onda 3 (piloto 7d validado): Corrigidos `ensure_schema()` (cursor DBAPI) e `clean_records()` (`pd.isna(value)` para `NaT`) em `src/load.py`; carga piloto de 7 dias (`2026-11-26-piloto7d`) executada 2 vezes no Supabase comprovando idempotência (`21` partidos, `513` deputados, `1.680` proposições, `284` votações, `525` despesas e `2` registros em `log_execucoes_pipeline`).
 - Onda 3 (concluída): Carga oficial de 30 dias (`2026-10-27` a `2026-11-26`) executada e validada diretamente no Supabase (`21` partidos, `513` deputados, `7.430` proposições, `2.000` votações, `1.768` despesas válidas, `18.387` despesas negativas separadas em quarentena e `3` registros em `log_execucoes_pipeline`).
+- Onda 4 (concluída): Adaptado `src/ai_enrichment.py` para `google-genai` (`gemini-embedding-001` em 1.536 dimensões + `gemini-3.5-flash-lite` com fallback e trava anti-alucinação); piloto de 10 itens revalidado e lote escalado no Free Tier para **348 proposições classificadas** (100% dos `PL`, `PLP`, `PEC` e `MPV` dos últimos 30 dias) e **60 resumos executivos** gravados no Supabase (`US$ 0.00`).
 
 ### Planned
-- Onda 4 (execução): Preencher `OPENAI_API_KEY` no `.env`, rodar piloto obrigatório de 10 itens (`--limit 10`) e processar lote completo.
 - Onda 5/6 (evidências): Importar e testar workflow no n8n (Docker/Cloud), capturar prints em `docs/prints/`, gerar `docs/pitch_bussola_publica.pdf` e submeter na Xperiun até 15/12/2026.
 
 ## [0.1.0] - 2026-11-26

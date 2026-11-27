@@ -139,7 +139,7 @@ def embed_texts(
                 except genai_errors.APIError as exc:
                     status_code = getattr(exc, "code", None)
                     if status_code in (429, 500, 502, 503, 504) and attempt < 4:
-                        wait_s = 15 * attempt
+                        wait_s = 62 if status_code == 429 else (15 * attempt)
                         logger.warning(
                             "Retry embeddings Gemini HTTP %s (tentativa %s/4). Aguardando %ss..."
                             , status_code
@@ -150,7 +150,7 @@ def embed_texts(
                         continue
                     raise
             if idx + batch_size < len(texts):
-                time.sleep(0.5)
+                time.sleep(62)
         else:
             resp = client.embeddings.create(model=model, input=chunk)
             all_vectors.extend(list(item.embedding) for item in resp.data)

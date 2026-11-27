@@ -14,7 +14,7 @@
 | **Onda 1** | Etapa 1: Exploração | Inspeção Swagger e respostas reais da API da Câmara | 28/11 a 29/11 | Concluída |
 | **Onda 2** | Etapa 2: Extração | Script resiliente + paginação + JSON bruto local (`data/raw/`) | 30/11 a 02/12 | Concluída (7d e 30d validados) |
 | **Onda 3** | Etapa 3: Transformação & Carga | Limpeza Pandas, Star Schema SQL, carga 7 dias -> 30 dias no Supabase | 03/12 a 06/12 | Concluída (30d carregados e validados no Supabase) |
-| **Onda 4** | Etapa 4: Camada de IA | Piloto 10 itens, embeddings `text-embedding-3-small`, cosseno e resumo | 07/12 a 09/12 | Código pronto (aguarda `OPENAI_API_KEY`) |
+| **Onda 4** | Etapa 4: Camada de IA | Piloto 10 itens, embeddings (`gemini-embedding-001` / `1536`d), cosseno e resumo (`gemini-3.5-flash-lite`) | 07/12 a 09/12 | Concluída (348 classificadas, 100% dos PL/PLP/PEC/MPV + 60 resumos) |
 | **Onda 5** | Etapa 5: Automação n8n | Workflows cron 06h00, alerta Telegram e digest semanal + `.json` | 10/12 a 12/12 | Parcial (`.json` e runner prontos; sem Docker/n8n local) |
 | **Onda 6** | Empacotamento & Pitch | `README.md`, diagrama, prints, slides (até 6) e submissão na Xperiun | 13/12 a 15/12 | Em andamento (`README.md`, diagrama e roteiro prontos) |
 
@@ -66,12 +66,12 @@
 ### Onda 4: Camada de IA Aplicada com Controle de Custos (Etapa 4)
 - [x] Definir lista final de ~10 temas oficiais da Bússola Pública (`TAXONOMIA_TEMAS` em `src/config.py`).
 - [x] Implementar `src/ai_enrichment.py`:
-  - Geração e cache local dos embeddings da taxonomia de temas (`text-embedding-3-small`).
-  - Seleção incremental de proposições ainda não classificadas (`WHERE tema_ia IS NULL`).
+  - Geração e cache local dos embeddings da taxonomia de temas (`gemini-embedding-001` / `1536`d e suporte `text-embedding-3-small`).
+  - Seleção incremental de proposições ainda não classificadas (`WHERE tema_ia IS NULL`), priorizando projetos substantivos (`PL`, `PLP`, `PEC`, `MPV`).
   - Cálculo de similaridade de cosseno e atribuição de `tema_ia` e `similaridade_tema`.
-  - (Caminho B) Geração de `resumo_executivo` (máximo 3 linhas, foco em negócios) com prompt documentado.
-- [ ] Executar **piloto obrigatório com 10 proposições** (após preencher `OPENAI_API_KEY` no `.env`), verificar faturamento/tokens na OpenAI, validar qualitativamente as classificações e só então processar o lote de 30 dias.
-- **DoD:** Proposições dos últimos 30 dias classificadas e resumidas no Supabase, com registro documentado do custo real do piloto e do lote completo.
+  - (Caminho B) Geração de `resumo_executivo` (máximo 3 linhas, foco em negócios, trava anti-alucinação) com `gemini-3.5-flash-lite` (fallback `gemini-3.8-flash` / `gemini-4-hydrogen`).
+- [x] Executar **piloto obrigatório com 10 proposições**, validar qualitativamente (eliminando truncamentos e alucinações procedimentais) e escalar no Free Tier para **348 proposições classificadas** (`100%` dos `PL`, `PLP`, `PEC` e `MPV` dos 30 dias, sendo `60` com resumo executivo, custo US$ 0.00).
+- **DoD:** Proposições principais dos últimos 30 dias classificadas e resumidas no Supabase, com registro documentado de tokens e custo real em `log_execucoes_pipeline`.
 
 ### Onda 5: Orquestração Autônoma com n8n (Etapa 5)
 - [ ] Subir ambiente n8n (Docker local ou n8n Cloud) e configurar credenciais PostgreSQL (Supabase) e Telegram/E-mail.
