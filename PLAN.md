@@ -74,9 +74,9 @@
 - **DoD:** Proposições principais dos últimos 30 dias classificadas e resumidas no Supabase, com registro documentado de tokens e custo real em `log_execucoes_pipeline`.
 
 ### Onda 5: Orquestração Autônoma com n8n (Etapa 5)
-- [ ] Subir ambiente n8n (Docker local ou n8n Cloud) e configurar credenciais PostgreSQL (Supabase) e Telegram/E-mail.
-- [x] Construir Workflow de **Ingestão Diária (06h00)** e **Alerta Crítico + Digest Semanal** em `n8n/radar_legislativo_workflow.json` (plus `src/webhook_runner.py` e `n8n/README.md`).
-- [ ] Testar execução completa, capturar prints de sucesso e salvar em `docs/prints/`.
+- [x] Subir ambiente n8n (`npx n8n` em `http://localhost:5678` com `NODE_OPTIONS="--dns-result-order=ipv4first"`) e configurar credenciais PostgreSQL (`Postgres account`) e Telegram (`Telegram account`).
+- [x] Construir e publicar Workflow `Monitorar Radar Legislativo e notificar Telegram` (`Pbtgkim2DNO5Hgc0`) com **Ingestão Diária (06h00)** e **Alerta Crítico + Digest Semanal** em `n8n/radar_legislativo_workflow.json`, `src/webhook_runner.py` e `n8n/README.md`.
+- [x] Testar execução completa ao vivo (`ID#3` semanal Top 5 em `1.558s` e `ID#4` diário com runner `8085` + Gemini + 10 alertas em `3m 51.875s`), validar mensagens reais no Telegram (`message_id: 4` e `5`) e salvar prints em `docs/prints/`.
 - **DoD:** Execução end-to-end no n8n comprovada por print e arquivo `.json` versionado no GitHub.
 
 ### Onda 6: Documentação de Portfólio, Pitch e Entrega Final

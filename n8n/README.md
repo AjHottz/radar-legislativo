@@ -5,16 +5,15 @@ Este diretório contém o fluxo exportado [radar_legislativo_workflow.json](./ra
 ## Fluxos Incluídos no JSON
 
 1. **Ingestão Diária + Alerta Crítico (06h00 BRT):**
-   - `Cron Diario 06h00` -> dispara diariamente às 06:00 (`0 6 * * *`).
-   - `Acionar Pipeline Python (HTTP Runner)` -> envia `POST http://127.0.0.1:8085/run-pipeline` para [webhook_runner.py](../src/webhook_runner.py) (`days=2`, `limit=20`).
-   - `Supabase: Buscar Temas Criticos (24h)` -> consulta proposições recém-processadas com `resumo_executivo IS NOT NULL` em temas críticos (`Tecnologia, Dados e Inteligência Artificial`, `Sistema Tributário e Fiscal`, `Economia, Mercado Financeiro e Regulação`).
-   - `Ha Proposicao Critica?` -> envia alerta imediato no Telegram quando há correspondência.
+   - `Agendar pipeline diario 06h` -> dispara diariamente às 06:00 (`America/Sao_Paulo`).
+   - `Executar pipeline Python (8085)` -> envia `POST http://127.0.0.1:8085/run-pipeline` para [webhook_runner.py](../src/webhook_runner.py) (`days=2`, `limit=20`, retry 3x).
+   - `Consultar proposicoes criticas 24h` -> consulta proposições recém-processadas com `resumo_executivo IS NOT NULL` em temas críticos (`Tecnologia, Dados e Inteligência Artificial`, `Sistema Tributário e Fiscal`, `Economia, Mercado Financeiro e Regulação`).
+   - `Agregar alertas criticos` + `Enviar alerta diario Telegram` -> consolida em HTML e envia o alerta no Telegram quando há correspondência.
 
 2. **Digest Semanal Executivo (Segunda-feira 08h00 BRT):**
-   - `Cron Digest Semanal (Seg 08h00)` -> dispara semanalmente (`0 8 * * 1`).
-   - `Supabase: Top 5 da Semana` -> seleciona as 5 proposições com `resumo_executivo IS NOT NULL` mais relevantes dos últimos 7 dias.
-   - `Formatar Digest Top 5` -> consolida o boletim em Markdown.
-   - `Telegram: Enviar Digest Semanal` -> publica o relatório semanal no canal da consultoria.
+   - `Agendar resumo semanal Seg 08h` -> dispara semanalmente às segundas-feiras às 08:00 (`America/Sao_Paulo`).
+   - `Consultar Top 5 semanal (7d)` -> seleciona as 5 proposições com `resumo_executivo IS NOT NULL` mais aderentes dos últimos 7 dias.
+   - `Agregar Top 5 semanal` + `Enviar resumo semanal Telegram` -> consolida o Top 5 em HTML e envia o boletim no Telegram.
 
 ## Execução Local sem Docker (`npx n8n` + HTTP Runner)
 
@@ -26,10 +25,14 @@ Como o ambiente conta com Node.js, você pode subir tudo localmente em dois term
    ```
    *(Endpoint ativo em `http://127.0.0.1:8085`: `GET /health` e `POST /run-pipeline`.)*
 
-2. **Terminal 2 (n8n local via npx):**
+2. **Terminal 2 (n8n local via npx, priorizando IPv4 no Windows):**
    ```powershell
-   npx n8n start
+   $env:N8N_PORT="5678"
+   $env:GENERIC_TIMEZONE="America/Sao_Paulo"
+   $env:NODE_OPTIONS="--dns-result-order=ipv4first"
+   npx -y n8n start
    ```
+   *(A flag `--dns-result-order=ipv4first` evita timeout em redes Windows onde o DNS IPv6 de `api.telegram.org` não responde.)*
    Acesse `http://localhost:5678`, vá em **Workflows -> Import from File** e selecione `n8n/radar_legislativo_workflow.json`.
 
 ## Credenciais Necessárias no n8n

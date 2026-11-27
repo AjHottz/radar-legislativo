@@ -1,244 +1,308 @@
 {
-  "name": "Radar Legislativo - Bussola Publica (Ingestao + Alertas + Digest)",
+  "name": "Monitorar Radar Legislativo e notificar Telegram",
+  "description": "Executa o pipeline diario (ETL + IA Gemini) do Radar Legislativo via runner Python local, consulta proposicoes criticas no Supabase e envia alertas e resumo semanal Top 5 no Telegram.",
+  "active": false,
   "nodes": [
     {
+      "id": "0c067893-fccd-471d-ba7a-115ac2b8ba80",
+      "name": "Agendar pipeline diario 06h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        240,
+        220
+      ],
       "parameters": {
         "rule": {
           "interval": [
             {
-              "field": "cronExpression",
-              "expression": "0 6 * * *"
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 6,
+              "triggerAtMinute": 0
             }
           ]
         }
-      },
-      "id": "node-cron-diario",
-      "name": "Cron Diario 06h00",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.2,
-      "position": [220, 200]
+      }
     },
     {
+      "id": "9296e2e6-9d98-4daf-9b8e-67056c2809f7",
+      "name": "Executar pipeline Python (8085)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        520,
+        220
+      ],
       "parameters": {
         "method": "POST",
         "url": "http://127.0.0.1:8085/run-pipeline",
+        "authentication": "none",
         "sendBody": true,
+        "contentType": "json",
         "specifyBody": "json",
-        "jsonBody": "={\n  \"step\": \"all\",\n  \"days\": 2,\n  \"limit\": 20\n}",
+        "jsonBody": "{\"step\": \"all\", \"days\": 2, \"limit\": 20}",
         "options": {
           "timeout": 300000
         }
       },
-      "id": "node-exec-pipeline",
-      "name": "Acionar Pipeline Python (HTTP Runner)",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [480, 200]
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
     },
     {
+      "id": "d62794b0-19ab-4a86-bb82-d2a76c940c34",
+      "name": "Consultar proposicoes criticas 24h",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.8,
+      "position": [
+        800,
+        220
+      ],
       "parameters": {
+        "resource": "database",
         "operation": "executeQuery",
         "query": "SELECT id_proposicao\n  , sigla_tipo\n  , numero\n  , ano\n  , tema_ia\n  , similaridade_tema\n  , COALESCE(resumo_executivo, ementa) AS resumo_executivo\n  , data_apresentacao\n  , uri\nFROM public.fato_proposicoes\nWHERE tema_ia IN (\n    'Tecnologia, Dados e Inteligência Artificial'\n    , 'Sistema Tributário e Fiscal'\n    , 'Economia, Mercado Financeiro e Regulação'\n  )\n  AND resumo_executivo IS NOT NULL\n  AND processado_ia_em >= NOW() - INTERVAL '24 hours'\nORDER BY similaridade_tema DESC\nLIMIT 10;"
       },
-      "id": "node-pg-alertas",
-      "name": "Supabase: Buscar Temas Criticos (24h)",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [740, 200],
+      "executeOnce": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
       "credentials": {
         "postgres": {
-          "id": "SUPABASE_POSTGRES_CREDENTIAL",
-          "name": "Supabase Postgres - Radar Legislativo"
+          "id": "CONFIGURE_POSTGRES_CREDENTIAL",
+          "name": "Postgres account"
         }
       }
     },
     {
+      "id": "9dc1025e-aa80-4997-8774-ba5942a4edfb",
+      "name": "Agregar alertas criticos",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1080,
+        220
+      ],
       "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
-          "conditions": [
-            {
-              "id": "cond-tem-proposicao",
-              "leftValue": "={{ $json.id_proposicao }}",
-              "rightValue": "",
-              "operator": {
-                "type": "number",
-                "operation": "exists",
-                "singleValue": true
-              }
-            }
-          ],
-          "combinator": "and"
-        }
-      },
-      "id": "node-if-critico",
-      "name": "Ha Proposicao Critica?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [1000, 200]
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "proposicoes",
+        "include": "allFields"
+      }
     },
     {
-      "parameters": {
-        "chatId": "SEU_TELEGRAM_CHAT_ID",
-        "text": "=🚨 *ALERTA REGULATORIO - BUSSOLA PUBLICA*\n\n*Proposicao:* {{ $json.sigla_tipo }} {{ $json.numero }}/{{ $json.ano }}\n*Tema IA:* {{ $json.tema_ia }} (score {{ $json.similaridade_tema }})\n*Data:* {{ $json.data_apresentacao }}\n\n*Resumo Executivo:*\n{{ $json.resumo_executivo }}\n\n🔗 {{ $json.uri }}",
-        "additionalFields": {
-          "parse_mode": "Markdown"
-        }
-      },
-      "id": "node-telegram-alerta",
-      "name": "Telegram: Alerta Critico Imediato",
+      "id": "43423c9a-ae7b-408c-9c83-dce811f533de",
+      "name": "Enviar alerta diario Telegram",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [1260, 140],
+      "position": [
+        1360,
+        220
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "SEU_TELEGRAM_CHAT_ID",
+        "text": "=<b>Radar Legislativo: Alerta Diario (Temas Criticos)</b>\n<i>{{ $now.setZone('America/Sao_Paulo').toFormat('dd/MM/yyyy HH:mm') }}</i>\n\n{{ $('Agregar alertas criticos').item.json.proposicoes.map((p, idx) => (idx + 1) + '. <b>' + p.sigla_tipo + ' ' + p.numero + '/' + p.ano + '</b> [' + p.tema_ia + ']\\nSimilaridade: ' + Number(p.similaridade_tema || 0).toFixed(3) + '\\nResumo: ' + String(p.resumo_executivo || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').slice(0, 220) + '...' + (p.uri ? '\\n<a href=\"' + p.uri + '\">Ver proposicao</a>' : '')).join('\\n\\n') }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
       "credentials": {
         "telegramApi": {
-          "id": "TELEGRAM_BOT_CREDENTIAL",
-          "name": "Telegram Bot - Bussola Publica"
+          "id": "CONFIGURE_TELEGRAM_CREDENTIAL",
+          "name": "Telegram account"
         }
       }
     },
     {
+      "id": "94f3c78f-7d01-431f-a3c6-b75c99b7205f",
+      "name": "Agendar resumo semanal Seg 08h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        240,
+        540
+      ],
       "parameters": {
         "rule": {
           "interval": [
             {
-              "field": "cronExpression",
-              "expression": "0 8 * * 1"
+              "field": "weeks",
+              "weeksInterval": 1,
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 8,
+              "triggerAtMinute": 0
             }
           ]
-        }
-      },
-      "id": "node-cron-semanal",
-      "name": "Cron Digest Semanal (Seg 08h00)",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.2,
-      "position": [220, 480]
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "SELECT id_proposicao\n  , sigla_tipo\n  , numero\n  , ano\n  , tema_ia\n  , similaridade_tema\n  , COALESCE(resumo_executivo, ementa) AS resumo_executivo\n  , data_apresentacao\nFROM public.fato_proposicoes\nWHERE tema_ia IS NOT NULL\n  AND resumo_executivo IS NOT NULL\n  AND data_apresentacao >= NOW() - INTERVAL '7 days'\nORDER BY similaridade_tema DESC NULLS LAST\nLIMIT 5;"
-      },
-      "id": "node-pg-digest",
-      "name": "Supabase: Top 5 da Semana",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [480, 480],
-      "credentials": {
-        "postgres": {
-          "id": "SUPABASE_POSTGRES_CREDENTIAL",
-          "name": "Supabase Postgres - Radar Legislativo"
         }
       }
     },
     {
+      "id": "f6ac9ee2-0336-4a93-ac9d-2c9bfe1e2497",
+      "name": "Consultar Top 5 semanal (7d)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.8,
+      "position": [
+        520,
+        540
+      ],
       "parameters": {
-        "jsCode": "const items = $input.all().map((item, idx) => {\n  const d = item.json;\n  return `${idx + 1}. *${d.sigla_tipo} ${d.numero}/${d.ano}* (${d.tema_ia})\\n${d.resumo_executivo || 'Sem resumo'}`;\n});\nreturn [{ json: { mensagem: `📊 *DIGEST SEMANAL - RADAR LEGISLATIVO*\\n\\n${items.join('\\n\\n')}` } }];"
+        "resource": "database",
+        "operation": "executeQuery",
+        "query": "SELECT id_proposicao\n  , sigla_tipo\n  , numero\n  , ano\n  , tema_ia\n  , similaridade_tema\n  , COALESCE(resumo_executivo, ementa) AS resumo_executivo\n  , data_apresentacao\n  , uri\nFROM public.fato_proposicoes\nWHERE tema_ia IS NOT NULL\n  AND resumo_executivo IS NOT NULL\n  AND data_apresentacao >= NOW() - INTERVAL '7 days'\nORDER BY similaridade_tema DESC NULLS LAST\nLIMIT 5;"
       },
-      "id": "node-code-digest",
-      "name": "Formatar Digest Top 5",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [740, 480]
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "postgres": {
+          "id": "CONFIGURE_POSTGRES_CREDENTIAL",
+          "name": "Postgres account"
+        }
+      }
     },
     {
+      "id": "8b80eb04-e478-4daf-ac5a-65a018ff2aab",
+      "name": "Agregar Top 5 semanal",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        800,
+        540
+      ],
       "parameters": {
-        "chatId": "SEU_TELEGRAM_CHAT_ID",
-        "text": "={{ $json.mensagem }}",
-        "additionalFields": {
-          "parse_mode": "Markdown"
-        }
-      },
-      "id": "node-telegram-digest",
-      "name": "Telegram: Enviar Digest Semanal",
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "top5",
+        "include": "allFields"
+      }
+    },
+    {
+      "id": "4f81f3a4-7061-4bf6-bf8d-8aeb1cf85fef",
+      "name": "Enviar resumo semanal Telegram",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [1000, 480],
+      "position": [
+        1080,
+        540
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "SEU_TELEGRAM_CHAT_ID",
+        "text": "=<b>Radar Legislativo: Resumo Semanal Top 5</b>\n<i>{{ $now.setZone('America/Sao_Paulo').toFormat('dd/MM/yyyy') }}</i>\n\n{{ $('Agregar Top 5 semanal').item.json.top5.map((p, idx) => (idx + 1) + '. <b>' + p.sigla_tipo + ' ' + p.numero + '/' + p.ano + '</b> [' + p.tema_ia + ']\\nSimilaridade: ' + Number(p.similaridade_tema || 0).toFixed(3) + '\\nResumo: ' + String(p.resumo_executivo || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').slice(0, 220) + '...' + (p.uri ? '\\n<a href=\"' + p.uri + '\">Ver proposicao</a>' : '')).join('\\n\\n') }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
       "credentials": {
         "telegramApi": {
-          "id": "TELEGRAM_BOT_CREDENTIAL",
-          "name": "Telegram Bot - Bussola Publica"
+          "id": "CONFIGURE_TELEGRAM_CREDENTIAL",
+          "name": "Telegram account"
         }
+      }
+    },
+    {
+      "id": "dfdaa0eb-fa86-4533-b122-1887451aef5d",
+      "name": "Sticky Note 1a8cad75",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        240,
+        20
+      ],
+      "parameters": {
+        "content": "## Radar Legislativo (Bussola Publica)\n- **06h00 Diario:** Dispara `POST http://127.0.0.1:8085/run-pipeline` (ETL + Gemini) e envia alerta no Telegram se houver temas criticos nas ultimas 24h.\n- **Segunda 08h00:** Consulta Top 5 proposicoes dos ultimos 7 dias no Supabase e envia digest semanal.",
+        "color": 4,
+        "width": 620,
+        "height": 140
       }
     }
   ],
   "connections": {
-    "Cron Diario 06h00": {
+    "Agendar pipeline diario 06h": {
       "main": [
         [
           {
-            "node": "Acionar Pipeline Python (HTTP Runner)",
+            "node": "Executar pipeline Python (8085)",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Acionar Pipeline Python (HTTP Runner)": {
+    "Executar pipeline Python (8085)": {
       "main": [
         [
           {
-            "node": "Supabase: Buscar Temas Criticos (24h)",
+            "node": "Consultar proposicoes criticas 24h",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Supabase: Buscar Temas Criticos (24h)": {
+    "Consultar proposicoes criticas 24h": {
       "main": [
         [
           {
-            "node": "Ha Proposicao Critica?",
+            "node": "Agregar alertas criticos",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Ha Proposicao Critica?": {
+    "Agregar alertas criticos": {
       "main": [
         [
           {
-            "node": "Telegram: Alerta Critico Imediato",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        []
-      ]
-    },
-    "Cron Digest Semanal (Seg 08h00)": {
-      "main": [
-        [
-          {
-            "node": "Supabase: Top 5 da Semana",
+            "node": "Enviar alerta diario Telegram",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Supabase: Top 5 da Semana": {
+    "Agendar resumo semanal Seg 08h": {
       "main": [
         [
           {
-            "node": "Formatar Digest Top 5",
+            "node": "Consultar Top 5 semanal (7d)",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Formatar Digest Top 5": {
+    "Consultar Top 5 semanal (7d)": {
       "main": [
         [
           {
-            "node": "Telegram: Enviar Digest Semanal",
+            "node": "Agregar Top 5 semanal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agregar Top 5 semanal": {
+      "main": [
+        [
+          {
+            "node": "Enviar resumo semanal Telegram",
             "type": "main",
             "index": 0
           }
@@ -246,14 +310,8 @@
       ]
     }
   },
-  "active": false,
   "settings": {
     "executionOrder": "v1",
     "timezone": "America/Sao_Paulo"
-  },
-  "tags": [
-    {
-      "name": "radar-legislativo"
-    }
-  ]
+  }
 }

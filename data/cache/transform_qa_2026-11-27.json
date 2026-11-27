@@ -1,0 +1,37 @@
+{
+  "run_date": "2026-11-27",
+  "entidades": {
+    "dim_partidos": {
+      "lidos": 21,
+      "rejeitados": 0,
+      "deduplicados": 0,
+      "validos": 21
+    },
+    "dim_deputados": {
+      "lidos": 513,
+      "rejeitados": 0,
+      "deduplicados": 0,
+      "validos": 513
+    },
+    "fato_proposicoes": {
+      "lidos": 860,
+      "rejeitados": 25,
+      "deduplicados": 0,
+      "validos": 835
+    },
+    "fato_votacoes": {
+      "lidos": 175,
+      "rejeitados": 0,
+      "deduplicados": 0,
+      "validos": 175
+    },
+    "fato_despesas": {
+      "lidos": 12210,
+      "rejeitados_negativos": 11685,
+      "rejeitados_outros": 0,
+      "rejeitados": 11685,
+      "deduplicados": 0,
+      "validos": 525
+    }
+  }
+}

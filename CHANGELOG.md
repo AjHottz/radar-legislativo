@@ -17,8 +17,10 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 - Onda 3 (concluída): Carga oficial de 30 dias (`2026-10-27` a `2026-11-26`) executada e validada diretamente no Supabase (`21` partidos, `513` deputados, `7.430` proposições, `2.000` votações, `1.768` despesas válidas, `18.387` despesas negativas separadas em quarentena e `3` registros em `log_execucoes_pipeline`).
 - Onda 4 (concluída): Adaptado `src/ai_enrichment.py` para `google-genai` (`gemini-embedding-001` em 1.536 dimensões + `gemini-3.5-flash-lite` com fallback e trava anti-alucinação); piloto de 10 itens revalidado e lote escalado no Free Tier para **348 proposições classificadas** (100% dos `PL`, `PLP`, `PEC` e `MPV` dos últimos 30 dias) e **60 resumos executivos** gravados no Supabase (`US$ 0.00`).
 
+- Onda 5 (concluída): Instância local `n8n@2.49.7` conectada com `NODE_OPTIONS="--dns-result-order=ipv4first"` (workaround IPv6 Windows), credenciais Supabase Session Pooler e Telegram API configuradas, workflow `Monitorar Radar Legislativo e notificar Telegram` (`Pbtgkim2DNO5Hgc0`) publicado e exportado sanitizado em `n8n/radar_legislativo_workflow.json` (`10` nós, `Aggregate` nativo e 2 grupos visuais). Execuções ao vivo `ID#3` (semanal Top 5 em `1.558s`, `message_id: 4`) e `ID#4` (diário com runner `8085` + Gemini `20/20` + 10 alertas em `3m 51.875s`, `message_id: 5`) validadas e registradas com prints em `docs/prints/`.
+
 ### Planned
-- Onda 5/6 (evidências): Importar e testar workflow no n8n (Docker/Cloud), capturar prints em `docs/prints/`, gerar `docs/pitch_bussola_publica.pdf` e submeter na Xperiun até 15/12/2026.
+- Onda 6 (entrega final): Exportar diagrama `docs/arquitetura.png`, revisar `README.md` (com prints e instruções de leitura no Supabase), gerar `docs/pitch_bussola_publica.pdf`, auditar histórico Git e submeter na Xperiun até 15/12/2026.
 
 ## [0.1.0] - 2026-11-26
 
