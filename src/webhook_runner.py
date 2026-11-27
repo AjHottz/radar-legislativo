@@ -46,21 +46,29 @@ class PipelineWebhookHandler(BaseHTTPRequestHandler):
             self._send_json(400, {"error": "JSON invalido"})
             return
 
+        step = str(body.get("step", "all"))
+        if step not in ("all", "extract", "transform", "load", "ai"):
+            self._send_json(400, {"error": f"Step invalido: {step}"})
+            return
+
         days = int(body.get("days", 2))
-        limit = int(body.get("limit", 50))
+        limit = int(body.get("limit", 20))
         skip_ai = bool(body.get("skip_ai", False))
+        run_date = body.get("run_date")
 
         cmd = [
             sys.executable
             , "-m"
             , "src.main"
             , "--step"
-            , "all"
+            , step
             , "--days"
             , str(days)
             , "--limit"
             , str(limit)
         ]
+        if run_date:
+            cmd.extend(["--run-date", str(run_date)])
         if skip_ai:
             cmd.append("--skip-ai")
 

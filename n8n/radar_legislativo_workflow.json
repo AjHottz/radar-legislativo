@@ -20,18 +20,25 @@
     },
     {
       "parameters": {
-        "command": "cd /app/Data_CHallenge1 && .venv/Scripts/python.exe -m src.main --step all --days 2 --limit 50"
+        "method": "POST",
+        "url": "http://127.0.0.1:8085/run-pipeline",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"step\": \"all\",\n  \"days\": 2,\n  \"limit\": 20\n}",
+        "options": {
+          "timeout": 300000
+        }
       },
       "id": "node-exec-pipeline",
-      "name": "Executar Pipeline Python (ETL + IA)",
-      "type": "n8n-nodes-base.executeCommand",
-      "typeVersion": 1,
+      "name": "Acionar Pipeline Python (HTTP Runner)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [480, 200]
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT id_proposicao\n  , sigla_tipo\n  , numero\n  , ano\n  , tema_ia\n  , similaridade_tema\n  , resumo_executivo\n  , data_apresentacao\n  , uri\nFROM public.fato_proposicoes\nWHERE tema_ia IN (\n    'Tecnologia, Dados e Inteligência Artificial'\n    , 'Sistema Tributário e Fiscal'\n    , 'Economia, Mercado Financeiro e Regulação'\n  )\n  AND processado_ia_em >= NOW() - INTERVAL '24 hours'\nORDER BY similaridade_tema DESC\nLIMIT 10;"
+        "query": "SELECT id_proposicao\n  , sigla_tipo\n  , numero\n  , ano\n  , tema_ia\n  , similaridade_tema\n  , COALESCE(resumo_executivo, ementa) AS resumo_executivo\n  , data_apresentacao\n  , uri\nFROM public.fato_proposicoes\nWHERE tema_ia IN (\n    'Tecnologia, Dados e Inteligência Artificial'\n    , 'Sistema Tributário e Fiscal'\n    , 'Economia, Mercado Financeiro e Regulação'\n  )\n  AND resumo_executivo IS NOT NULL\n  AND processado_ia_em >= NOW() - INTERVAL '24 hours'\nORDER BY similaridade_tema DESC\nLIMIT 10;"
       },
       "id": "node-pg-alertas",
       "name": "Supabase: Buscar Temas Criticos (24h)",
@@ -76,7 +83,7 @@
     },
     {
       "parameters": {
-        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "chatId": "SEU_TELEGRAM_CHAT_ID",
         "text": "=🚨 *ALERTA REGULATORIO - BUSSOLA PUBLICA*\n\n*Proposicao:* {{ $json.sigla_tipo }} {{ $json.numero }}/{{ $json.ano }}\n*Tema IA:* {{ $json.tema_ia }} (score {{ $json.similaridade_tema }})\n*Data:* {{ $json.data_apresentacao }}\n\n*Resumo Executivo:*\n{{ $json.resumo_executivo }}\n\n🔗 {{ $json.uri }}",
         "additionalFields": {
           "parse_mode": "Markdown"
@@ -114,7 +121,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT id_proposicao\n  , sigla_tipo\n  , numero\n  , ano\n  , tema_ia\n  , similaridade_tema\n  , resumo_executivo\n  , data_apresentacao\nFROM public.fato_proposicoes\nWHERE tema_ia IS NOT NULL\n  AND data_apresentacao >= NOW() - INTERVAL '7 days'\nORDER BY similaridade_tema DESC NULLS LAST\nLIMIT 5;"
+        "query": "SELECT id_proposicao\n  , sigla_tipo\n  , numero\n  , ano\n  , tema_ia\n  , similaridade_tema\n  , COALESCE(resumo_executivo, ementa) AS resumo_executivo\n  , data_apresentacao\nFROM public.fato_proposicoes\nWHERE tema_ia IS NOT NULL\n  AND resumo_executivo IS NOT NULL\n  AND data_apresentacao >= NOW() - INTERVAL '7 days'\nORDER BY similaridade_tema DESC NULLS LAST\nLIMIT 5;"
       },
       "id": "node-pg-digest",
       "name": "Supabase: Top 5 da Semana",
@@ -140,7 +147,7 @@
     },
     {
       "parameters": {
-        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "chatId": "SEU_TELEGRAM_CHAT_ID",
         "text": "={{ $json.mensagem }}",
         "additionalFields": {
           "parse_mode": "Markdown"
@@ -164,14 +171,14 @@
       "main": [
         [
           {
-            "node": "Executar Pipeline Python (ETL + IA)",
+            "node": "Acionar Pipeline Python (HTTP Runner)",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Executar Pipeline Python (ETL + IA)": {
+    "Acionar Pipeline Python (HTTP Runner)": {
       "main": [
         [
           {
