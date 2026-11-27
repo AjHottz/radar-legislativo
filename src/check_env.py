@@ -24,6 +24,7 @@ REQUIRED_MODULES: list[str] = [
     , "sqlalchemy"
     , "psycopg2"
     , "openai"
+    , "google.genai"
     , "dotenv"
 ]
 
@@ -87,6 +88,12 @@ def main() -> int:
     imports_ok = check_imports()
     if not imports_ok:
         return 1
+
+    gemini_key = os.getenv("GEMINI_API_KEY")
+    if is_placeholder(gemini_key):
+        print("[PENDENTE] GEMINI_API_KEY ainda não configurada no .env.")
+    else:
+        print("[OK] GEMINI_API_KEY detectada no .env (valor ocultado).")
 
     openai_key = os.getenv("OPENAI_API_KEY")
     if is_placeholder(openai_key):

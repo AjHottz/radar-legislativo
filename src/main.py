@@ -7,7 +7,7 @@ import json
 import sys
 
 from src.ai_enrichment import run_ai_enrichment
-from src.config import is_placeholder, load_settings
+from src.config import load_settings
 from src.extract import run_extraction
 from src.load import run_load
 from src.transform import run_transform
@@ -68,10 +68,10 @@ def main() -> int:
             )
 
     if args.step in ("all", "ai") and not args.skip_ai:
-        if is_placeholder(settings.openai_api_key) and args.step == "all":
+        if not settings.is_ai_configured() and args.step == "all":
             output["ai"] = {
                 "status": "SKIPPED"
-                , "motivo": "OPENAI_API_KEY pendente no .env"
+                , "motivo": "Chave de IA (GEMINI_API_KEY ou OPENAI_API_KEY) pendente no .env"
             }
         else:
             output["ai"] = run_ai_enrichment(settings=settings, limit=limit)

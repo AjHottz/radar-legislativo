@@ -89,6 +89,10 @@ class Settings:
     sql_dir: Path
     camara_base_url: str
     database_url: str
+    ai_provider: str
+    gemini_api_key: str
+    gemini_embedding_model: str
+    gemini_summary_model: str
     openai_api_key: str
     openai_embedding_model: str
     openai_summary_model: str
@@ -104,12 +108,36 @@ class Settings:
                 "DATABASE_URL nao configurada no .env. Preencha a string de conexao do Supabase."
             )
 
-    def validate_openai(self) -> None:
-        """Valida se OPENAI_API_KEY foi configurada antes de operacoes de IA."""
-        if is_placeholder(self.openai_api_key):
+    def resolved_ai_provider(self) -> str:
+        """Resolve o provedor ativo de IA ('gemini' ou 'openai')."""
+        explicit = self.ai_provider.strip().lower()
+        if explicit in ("gemini", "openai"):
+            return explicit
+        if not is_placeholder(self.gemini_api_key):
+            return "gemini"
+        if not is_placeholder(self.openai_api_key):
+            return "openai"
+        return "gemini"
+
+    def is_ai_configured(self) -> bool:
+        """Retorna True se a chave do provedor de IA ativo estiver preenchida."""
+        provider = self.resolved_ai_provider()
+        if provider == "gemini":
+            return not is_placeholder(self.gemini_api_key)
+        return not is_placeholder(self.openai_api_key)
+
+    def validate_ai(self) -> str:
+        """Valida a chave do provedor ativo e retorna o nome do provedor."""
+        provider = self.resolved_ai_provider()
+        if provider == "gemini" and is_placeholder(self.gemini_api_key):
             raise RuntimeError(
-                "OPENAI_API_KEY nao configurada no .env. Preencha sua chave da OpenAI para executar a Onda 4."
+                "GEMINI_API_KEY nao configurada no .env. Preencha sua chave do Google AI Studio."
             )
+        if provider == "openai" and is_placeholder(self.openai_api_key):
+            raise RuntimeError(
+                "OPENAI_API_KEY nao configurada no .env. Preencha sua chave da OpenAI ou use AI_PROVIDER=gemini."
+            )
+        return provider
 
 
 def load_settings() -> Settings:
@@ -129,6 +157,10 @@ def load_settings() -> Settings:
             , "https://dadosabertos.camara.leg.br/api/v2"
         ).rstrip("/")
         , database_url=normalize_database_url(os.getenv("DATABASE_URL", ""))
+        , ai_provider=os.getenv("AI_PROVIDER", "")
+        , gemini_api_key=os.getenv("GEMINI_API_KEY", "")
+        , gemini_embedding_model=os.getenv("GEMINI_EMBEDDING_MODEL", "gemini-embedding-001")
+        , gemini_summary_model=os.getenv("GEMINI_SUMMARY_MODEL", "gemini-3.5-flash-lite")
         , openai_api_key=os.getenv("OPENAI_API_KEY", "")
         , openai_embedding_model=os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
         , openai_summary_model=os.getenv("OPENAI_SUMMARY_MODEL", "gpt-4o-mini")
